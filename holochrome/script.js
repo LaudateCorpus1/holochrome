@@ -129,11 +129,68 @@ chrome.commands.onCommand.addListener(eventTriggered);
 
 chrome.browserAction.onClicked.addListener(eventTriggered);
 
+var addRole = function(alias, arn) {
+  var roleLink = document.createElement("a");
+  roleLink.setAttribute("href", "#");
+  roleLink.appendChild(document.createTextNode(alias + " - " + arn));
+  roleLink.setAttribute("alias", alias);
+  roleLink.setAttribute("arn", arn);
+
+  var roleNode = document.createElement("div");
+  roleNode.appendChild(roleLink);
+
+  var rolesNode = document.getElementById("available_roles");
+  rolesNode.appendChild(roleNode);
+};
+
+var displayRoles = function(roles) {
+  // Clear out the existing roles.
+  var rolesNode = document.getElementById("available_roles");
+  while (rolesNode.firstChild) {
+    rolesNode.removeChild(rolesNode.firstChild);
+  }
+
+  // Now reload and display them.
+  var rolePairs = roles["roles"];
+  if (!rolePairs) {
+    return;
+  }
+  for (var i = 0; i < rolePairs.length; i++) {
+    var alias = rolePairs[i][0];
+    var arn = rolePairs[i][1];
+    addRole(alias, arn);
+  }
+};
+
+var init = function() {
+  chrome.storage.local.get("roles", displayRoles);
+};
+
+document.getElementById("add_new_role_link").onclick = function() {
+  var alias = document.getElementById("alias");
+  var arn = document.getElementById("arn");
+
+  chrome.storage.local.get("roles", function(roles) {
+    var rolePairs = roles["roles"] || [];
+    rolePairs.push([alias.value, arn.value]);
+    chrome.storage.local.set({"roles": rolePairs}, function() {
+      addRole(alias.value, arn.value);
+      alias.value = "";
+      arn.value = "";
+    });
+  });
+}
+
+
+document.addEventListener('DOMContentLoaded', init);
+
+/*
 var init = (function(){
+  populateAvailableRoles();
   getMyCreds(false);
   // tokens last 60 minutes, so we
   // refresh every 20 minutes to be safe
   setInterval(getMyCreds, 1200000, false);
 })();
-
+*/
 
