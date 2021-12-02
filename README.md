@@ -7,7 +7,7 @@ Holochrome is a chrome extension that allows you to easily spawn an AWS GUI sess
 
 # How do I get it?
 
-Chrome: [Chrome Web Store](https://chrome.google.com/webstore/detail/holochrome/fgnplojdffjfbcmoldcfdoikldnogjpa)
+Chrome: [Chrome Web Store](https://chrome.google.com/webstore/detail/holochrome/papjogngcdoogibgbongjmiakldjhpok)
 
 Firefox: [Mozilla Add-on Store](https://addons.mozilla.org/en-US/firefox/addon/bw-holochrome)
 
