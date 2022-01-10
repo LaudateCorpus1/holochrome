@@ -19,43 +19,46 @@ var request = function(url, callback, isEvent, attempts=0) {
     return;
   }
 
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET", url, true);
-  xhr.setRequestHeader("Content-Type", "application/json");
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4) {
-      switch (xhr.status) {
-        case 200:
-          callback(xhr.responseText);
-          break;
-        case 400:
-          // follow logout redirect, then re-administer login command
-          request(logoutUrl,  function(){
-            request(url, callback, isEvent, attempts++);
-          }, false, attempts++);
-          break;
-        case 0:
-          var errorMessage = "The instance metadata service could not be reached.";
-          console.log(errorMessage);
-          if (isEvent) {
-            createNotification(errorMessage);
-          }
-          break;
-        case 500:
-          var errorMessage = "Cannot find IAM role. Are you on a machine with an instance profile?";
-          console.log(errorMessage);
-          if (isEvent) {
-            createNotification(errorMessage);
-          }
-          break;
-        default:
-          break;
-      }
-    }
-  };
   console.log('Making HTTP request to: ' + url);
-  xhr.send();
-}
+  fetch(url)
+    .then(
+      function(response) {
+        switch (response.status) {
+          case 200:
+            callback(response);
+            break;
+          case 400:
+            // follow logout redirect, then re-administer login command
+            request(logoutUrl,  function(){
+              request(url, callback, isEvent, attempts++);
+            }, false, attempts++);
+            break;
+          case 0:
+            var errorMessage = "The instance metadata service could not be reached.";
+            console.log(errorMessage);
+            if (isEvent) {
+              createNotification(errorMessage);
+            }
+            break;
+          case 500:
+            var errorMessage = "Cannot find IAM role. Are you on a machine with an instance profile?";
+            console.log(errorMessage);
+            if (isEvent) {
+              createNotification(errorMessage);
+            }
+            break;
+          default:
+            break;
+        }
+      })
+    .catch(function(err) {
+      var errorMessage = "Cannot find IAM role. Are you on a machine with an instance profile?";
+      console.log(errorMessage);
+      if (isEvent) {
+        createNotification(errorMessage);
+      }
+    });
+};
 
 var getSigninToken = function(creds, isEvent) {
   var signinTokenUrl = federationUrlBase
@@ -63,8 +66,9 @@ var getSigninToken = function(creds, isEvent) {
                         + '&SessionDuration=43200'
                         + '&Session=' + encodeURIComponent(JSON.stringify(creds));
   var onComplete = function(response) {
-      response = JSON.parse(response);
-      getSessionCookies(response['SigninToken'], isEvent);
+      response.json().then(function(json) {
+        getSessionCookies(json['SigninToken'], isEvent);
+      });
   };
   request(signinTokenUrl, onComplete, isEvent);
 };
@@ -84,8 +88,9 @@ var getSessionCookies = function(signinToken, isEvent) {
 var getMyCreds = function(isEvent){
   var metadataUrl = "http://169.254.169.254/latest/meta-data/iam/security-credentials/";
   var onComplete = function(response) {
-      profileName = response.split("\n")[0]; // a bit of a hack, but everyone does it :(
-      getMyCredsFromProfile(isEvent, profileName);
+      response.text().then(function(profileName) {
+        getMyCredsFromProfile(isEvent, profileName);
+      });
   };
   request(metadataUrl, onComplete, isEvent);
 }
@@ -93,13 +98,14 @@ var getMyCreds = function(isEvent){
 var getMyCredsFromProfile = function(isEvent, profileName){
   var metadataUrl = "http://169.254.169.254/latest/meta-data/iam/security-credentials/" + profileName;
   var onComplete = function(response) {
-      response = JSON.parse(response);
-      var myCreds = {
-        'sessionId': response["AccessKeyId"],
-        'sessionKey': response["SecretAccessKey"],
-        'sessionToken': response["Token"]
-      };
-      getSigninToken(myCreds, isEvent);
+      response.json().then(function(json) {
+        var myCreds = {
+          'sessionId': json["AccessKeyId"],
+          'sessionKey': json["SecretAccessKey"],
+          'sessionToken': json["Token"]
+        };
+        getSigninToken(myCreds, isEvent);
+     });
   };
   request(metadataUrl, onComplete, isEvent);
 }
@@ -128,7 +134,7 @@ var eventTriggered = function(arg) {
 
 chrome.commands.onCommand.addListener(eventTriggered);
 
-chrome.browserAction.onClicked.addListener(eventTriggered);
+chrome.action.onClicked.addListener(eventTriggered);
 
 var init = (function(){
   getMyCreds(false);

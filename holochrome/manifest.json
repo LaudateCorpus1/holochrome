@@ -1,7 +1,13 @@
 {
-    "web_accessible_resources": [
-        "disableReload.js"
-    ],
+    "web_accessible_resources": [{
+        "resources": [
+          "disableReload.js"
+        ],
+        "matches": [
+          "https://console.aws.amazon.com/*",
+          "https://*.console.aws.amazon.com/*"
+        ]
+    }],
     "commands": {
         "open-console": {
             "global": true,
@@ -12,7 +18,7 @@
             "description": "Open a tab to AWS console"
         }
     },
-    "browser_action": {
+    "action": {
         "name": "Click to open AWS Console. Or press Cmd+Shift+1.",
         "default_icon": "holochrome-128.png"
     },
@@ -31,15 +37,15 @@
         "128": "holochrome-128.png"
     },
     "background": {
-        "scripts": [
-            "script.js"
-        ]
+        "service_worker": "script.js"
     },
-    "version": "1.6",
-    "manifest_version": 2,
+    "version": "1.7",
+    "manifest_version": 3,
     "permissions": [
         "notifications",
-        "webRequest",
+        "webRequest"
+    ],
+    "host_permissions": [
         "https://signin.aws.amazon.com/federation",
         "https://*.signin.aws.amazon.com/oauth",
         "http://169.254.169.254/*",
